@@ -17,9 +17,7 @@ User = get_user_model()
 
 
 class RegisterAPIView(generics.CreateAPIView):
-    """
-    API view for user registration
-    """
+    # registration view
     queryset = User.objects.all()
     serializer_class = UserRegistrationSerializer
     permission_classes = [permissions.AllowAny]
@@ -38,9 +36,7 @@ class RegisterAPIView(generics.CreateAPIView):
 
 
 class LoginAPIView(APIView):
-    """
-    API view for user login
-    """
+    # login view
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
@@ -57,9 +53,7 @@ class LoginAPIView(APIView):
 
 
 class LogoutAPIView(APIView):
-    """
-    API view for user logout
-    """
+    # logout view
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
@@ -76,9 +70,7 @@ class LogoutAPIView(APIView):
 
 
 class UserProfileAPIView(generics.RetrieveUpdateAPIView):
-    """
-    API view for getting and updating user profile
-    """
+    # user profile view(updating profile)
     serializer_class = UserProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -92,9 +84,7 @@ class UserProfileAPIView(generics.RetrieveUpdateAPIView):
 
 
 class ChangePasswordAPIView(APIView):
-    """
-    API view for changing user password
-    """
+    #for changing user password
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
@@ -103,6 +93,7 @@ class ChangePasswordAPIView(APIView):
             user = request.user
             user.set_password(serializer.validated_data['new_password'])
             user.save()
+
             # Delete all tokens to force re-login
             Token.objects.filter(user=user).delete()
             return Response({
@@ -114,8 +105,7 @@ class ChangePasswordAPIView(APIView):
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def user_detail_view(request):
-    """
-    API view to get current user details
-    """
+    
+    # API view to get current user details
     serializer = UserSerializer(request.user)
     return Response(serializer.data, status=status.HTTP_200_OK)
