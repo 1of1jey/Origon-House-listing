@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.password_validation import validate_password
-import re
+from email_validator import validate_email, EmailNotValidError
 
 User = get_user_model()
 
@@ -35,33 +35,12 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         # Normalize email to lowercase
         value = value.lower().strip()
         
-        # Strict email validation regex - TLD must be 2-6 characters
-        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$'
-        
-        if not re.match(email_pattern, value):
-            raise serializers.ValidationError("Please enter a valid email address.")
-        
-        # Prevent multiple consecutive dots in domain
-        if '..' in value:
-            raise serializers.ValidationError("Email address contains invalid consecutive dots.")
-        
-        # Additional validation for domain and TLD
-        if '@' in value:
-            local_part, domain_part = value.split('@', 1)
-            domain_parts = domain_part.split('.')
-            
-            # Check for suspicious multiple TLD patterns
-            if len(domain_parts) > 3:  # Allow subdomain.domain.tld but not more
-                raise serializers.ValidationError("Email address has invalid domain format.")
-            
-            # Validate TLD (last part)
-            tld = domain_parts[-1]
-            if not tld.isalpha() or len(tld) < 2 or len(tld) > 6:
-                raise serializers.ValidationError("Email address has invalid top-level domain.")
-            
-            # Check for common invalid patterns like merged TLDs
-            if any(invalid in tld for invalid in ['comcom', 'orgorg', 'netnet', 'eduedu']):
-                raise serializers.ValidationError("Email address has invalid top-level domain.")
+        try:
+            # Use email-validator for robust validation
+            validated_email = validate_email(value)
+            value = validated_email.email  # Get the normalized email
+        except EmailNotValidError as e:
+            raise serializers.ValidationError(f"Please enter a valid email address: {str(e)}")
         
         # Check if email already exists
         if User.objects.filter(email=value).exists():
@@ -91,33 +70,12 @@ class UserLoginSerializer(serializers.Serializer):
         # Normalize email to lowercase for consistent login
         value = value.lower().strip()
         
-        # Strict email validation regex - TLD must be 2-6 characters
-        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$'
-        
-        if not re.match(email_pattern, value):
-            raise serializers.ValidationError("Please enter a valid email address.")
-        
-        # Prevent multiple consecutive dots in domain
-        if '..' in value:
-            raise serializers.ValidationError("Email address contains invalid consecutive dots.")
-        
-        # Additional validation for domain and TLD
-        if '@' in value:
-            local_part, domain_part = value.split('@', 1)
-            domain_parts = domain_part.split('.')
-            
-            # Check for suspicious multiple TLD patterns
-            if len(domain_parts) > 3:  # Allow subdomain.domain.tld but not more
-                raise serializers.ValidationError("Email address has invalid domain format.")
-            
-            # Validate TLD (last part)
-            tld = domain_parts[-1]
-            if not tld.isalpha() or len(tld) < 2 or len(tld) > 6:
-                raise serializers.ValidationError("Email address has invalid top-level domain.")
-            
-            # Check for common invalid patterns like merged TLDs
-            if any(invalid in tld for invalid in ['comcom', 'orgorg', 'netnet', 'eduedu']):
-                raise serializers.ValidationError("Email address has invalid top-level domain.")
+        try:
+            # Use email-validator for robust validation
+            validated_email = validate_email(value)
+            value = validated_email.email  # Get the normalized email
+        except EmailNotValidError as e:
+            raise serializers.ValidationError(f"Please enter a valid email address: {str(e)}")
         
         return value
 
