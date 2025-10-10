@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.password_validation import validate_password
+import re
 
 User = get_user_model()
 
@@ -8,13 +9,20 @@ User = get_user_model()
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, validators=[validate_password])
     password_confirm = serializers.CharField(write_only=True)
+    email = serializers.EmailField(
+        required=True,
+        error_messages={
+            'invalid': 'Please enter a valid email address.',
+            'required': 'Email address is required.',
+            'blank': 'Email address cannot be blank.'
+        }
+    )
 
     class Meta:
         model = User
         fields = ('username', 'email', 'full_name', 'phone_number', 'password', 'password_confirm')
         extra_kwargs = {
             'password': {'write_only': True},
-            'email': {'required': True},
             'full_name': {'required': True},
         }
 
@@ -24,6 +32,28 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return vald
 
     def validate_email(self, value):
+        # Normalize email to lowercase
+        value = value.lower().strip()
+        
+        # Strict email validation regex
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        
+        if not re.match(email_pattern, value):
+            raise serializers.ValidationError("Please enter a valid email address.")
+        
+        # Prevent multiple consecutive dots in domain
+        if '..' in value:
+            raise serializers.ValidationError("Email address contains invalid consecutive dots.")
+        
+        # Prevent multiple TLDs (like .com.com)
+        domain_part = value.split('@')[1] if '@' in value else ''
+        domain_parts = domain_part.split('.')
+        
+        # Check for suspicious multiple TLD patterns
+        if len(domain_parts) > 3:  # Allow subdomain.domain.tld but not more
+            raise serializers.ValidationError("Email address has invalid domain format.")
+        
+        # Check if email already exists
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError("A user with this email already exists.")
         return value
@@ -38,8 +68,38 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
 
 class UserLoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+    email = serializers.EmailField(
+        error_messages={
+            'invalid': 'Please enter a valid email address.',
+            'required': 'Email address is required.',
+            'blank': 'Email address cannot be blank.'
+        }
+    )
     password = serializers.CharField(write_only=True)
+
+    def validate_email(self, value):
+        # Normalize email to lowercase for consistent login
+        value = value.lower().strip()
+        
+        # Strict email validation regex
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        
+        if not re.match(email_pattern, value):
+            raise serializers.ValidationError("Please enter a valid email address.")
+        
+        # Prevent multiple consecutive dots in domain
+        if '..' in value:
+            raise serializers.ValidationError("Email address contains invalid consecutive dots.")
+        
+        # Prevent multiple TLDs (like .com.com)
+        domain_part = value.split('@')[1] if '@' in value else ''
+        domain_parts = domain_part.split('.')
+        
+        # Check for suspicious multiple TLD patterns
+        if len(domain_parts) > 3:  # Allow subdomain.domain.tld but not more
+            raise serializers.ValidationError("Email address has invalid domain format.")
+        
+        return value
 
     def validate(self, vald):
         email = vald.get('email')
