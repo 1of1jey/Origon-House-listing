@@ -4,7 +4,6 @@ from . import views
 app_name = 'host_auth'
 
 urlpatterns = [
-<<<<<<< HEAD
     path('api/register/', views.HostRegisterAPIView.as_view(), name='api_host_register'),
     path('api/login/', views.HostLoginAPIView.as_view(), name='api_host_login'),
     path('api/logout/', views.HostLogoutAPIView.as_view(), name='api_host_logout'),
@@ -13,9 +12,3 @@ urlpatterns = [
     path('api/details/', views.host_detail_view, name='api_host_detail'),
     path('api/verification-status/', views.host_verification_status, name='api_host_verification'),
 ]
-=======
-    path('admin/', admin.site.urls),
-    path('auth/', include('authentication.urls')),
-    path('host/', include('host_auth.urls')),
-]
->>>>>>> 8209ea33da0616bdd08461d509ff9618767087cf
