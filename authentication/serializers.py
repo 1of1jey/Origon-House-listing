@@ -35,8 +35,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         # Normalize email to lowercase
         value = value.lower().strip()
         
-        # Strict email validation regex
-        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        # Strict email validation regex - TLD must be 2-6 characters
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$'
         
         if not re.match(email_pattern, value):
             raise serializers.ValidationError("Please enter a valid email address.")
@@ -45,13 +45,23 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         if '..' in value:
             raise serializers.ValidationError("Email address contains invalid consecutive dots.")
         
-        # Prevent multiple TLDs (like .com.com)
-        domain_part = value.split('@')[1] if '@' in value else ''
-        domain_parts = domain_part.split('.')
-        
-        # Check for suspicious multiple TLD patterns
-        if len(domain_parts) > 3:  # Allow subdomain.domain.tld but not more
-            raise serializers.ValidationError("Email address has invalid domain format.")
+        # Additional validation for domain and TLD
+        if '@' in value:
+            local_part, domain_part = value.split('@', 1)
+            domain_parts = domain_part.split('.')
+            
+            # Check for suspicious multiple TLD patterns
+            if len(domain_parts) > 3:  # Allow subdomain.domain.tld but not more
+                raise serializers.ValidationError("Email address has invalid domain format.")
+            
+            # Validate TLD (last part)
+            tld = domain_parts[-1]
+            if not tld.isalpha() or len(tld) < 2 or len(tld) > 6:
+                raise serializers.ValidationError("Email address has invalid top-level domain.")
+            
+            # Check for common invalid patterns like merged TLDs
+            if any(invalid in tld for invalid in ['comcom', 'orgorg', 'netnet', 'eduedu']):
+                raise serializers.ValidationError("Email address has invalid top-level domain.")
         
         # Check if email already exists
         if User.objects.filter(email=value).exists():
@@ -81,8 +91,8 @@ class UserLoginSerializer(serializers.Serializer):
         # Normalize email to lowercase for consistent login
         value = value.lower().strip()
         
-        # Strict email validation regex
-        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        # Strict email validation regex - TLD must be 2-6 characters
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$'
         
         if not re.match(email_pattern, value):
             raise serializers.ValidationError("Please enter a valid email address.")
@@ -91,13 +101,23 @@ class UserLoginSerializer(serializers.Serializer):
         if '..' in value:
             raise serializers.ValidationError("Email address contains invalid consecutive dots.")
         
-        # Prevent multiple TLDs (like .com.com)
-        domain_part = value.split('@')[1] if '@' in value else ''
-        domain_parts = domain_part.split('.')
-        
-        # Check for suspicious multiple TLD patterns
-        if len(domain_parts) > 3:  # Allow subdomain.domain.tld but not more
-            raise serializers.ValidationError("Email address has invalid domain format.")
+        # Additional validation for domain and TLD
+        if '@' in value:
+            local_part, domain_part = value.split('@', 1)
+            domain_parts = domain_part.split('.')
+            
+            # Check for suspicious multiple TLD patterns
+            if len(domain_parts) > 3:  # Allow subdomain.domain.tld but not more
+                raise serializers.ValidationError("Email address has invalid domain format.")
+            
+            # Validate TLD (last part)
+            tld = domain_parts[-1]
+            if not tld.isalpha() or len(tld) < 2 or len(tld) > 6:
+                raise serializers.ValidationError("Email address has invalid top-level domain.")
+            
+            # Check for common invalid patterns like merged TLDs
+            if any(invalid in tld for invalid in ['comcom', 'orgorg', 'netnet', 'eduedu']):
+                raise serializers.ValidationError("Email address has invalid top-level domain.")
         
         return value
 
