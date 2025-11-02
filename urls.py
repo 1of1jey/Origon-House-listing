@@ -1,3 +1,10 @@
+from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('auth/', include('authentication.urls')),
+]
 from django.urls import path
 from . import views
 
@@ -11,6 +18,7 @@ urlpatterns = [
     path('api/change-password/', views.ChangeHostPasswordAPIView.as_view(), name='api_host_change_password'),
     path('api/details/', views.host_detail_view, name='api_host_detail'),
     path('api/verification-status/', views.host_verification_status, name='api_host_verification'),
+<<<<<<< HEAD
     path('admin/', admin.site.urls),
     path('auth/', include('authentication.urls')),
     path('host/', include('host_auth.urls')),
@@ -24,3 +32,6 @@ urlpatterns = [
     path('auth/', include('authentication.urls')),
 ]
 
+=======
+]
+>>>>>>> deda353805c47f9bed14619547842e722c4f8b56
